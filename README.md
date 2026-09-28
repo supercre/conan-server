@@ -112,8 +112,11 @@ Windows (Developer PowerShell for Visual Studio):
 
 ```powershell
 conan-server.exe worker --server https://packages.example.org `
-  --id windows-1 --target windows-x86_64-release
+  --id windows-1 --target windows-x86_64-release --work C:\conan-work
 ```
+
+On Windows, use a short local drive path for `--work`; UNC shares are not
+supported by the command shells used by many Conan recipes.
 
 macOS / OS X:
 

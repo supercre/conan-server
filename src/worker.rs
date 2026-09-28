@@ -51,6 +51,35 @@ fn runner_os() -> &'static str {
     }
 }
 
+/// Rust uses extended-length paths on Windows; cmd.exe and some build tools
+/// reject them as working directories. Keep the resolved local drive path.
+fn compiler_path(path: &Path) -> Result<PathBuf> {
+    let canonical = std::fs::canonicalize(path)?;
+    #[cfg(windows)]
+    {
+        use std::path::{Component, Prefix};
+        let mut components = canonical.components();
+        match components.next() {
+            Some(Component::Prefix(prefix)) => match prefix.kind() {
+                Prefix::VerbatimDisk(drive) => {
+                    let mut result = PathBuf::from(format!("{}:\\", drive as char));
+                    for component in components {
+                        if component != Component::RootDir {
+                            result.push(component.as_os_str());
+                        }
+                    }
+                    Ok(result)
+                }
+                Prefix::Disk(_) => Ok(canonical),
+                _ => bail!("worker paths must be on a local Windows drive, not a UNC share"),
+            },
+            _ => bail!("expected an absolute Windows drive path"),
+        }
+    }
+    #[cfg(not(windows))]
+    Ok(canonical)
+}
+
 pub async fn run(mut options: Options) -> Result<()> {
     ensure!(safe_component(&options.id), "invalid worker id");
     ensure!(
@@ -72,9 +101,9 @@ pub async fn run(mut options: Options) -> Result<()> {
         "use an HTTP(S) server URL without credentials, query, or fragment"
     );
     std::fs::create_dir_all(&options.work)?;
-    options.work = std::fs::canonicalize(&options.work)?;
+    options.work = compiler_path(&options.work)?;
     if let Some(profile) = &options.host_profile {
-        options.host_profile = Some(std::fs::canonicalize(profile)?);
+        options.host_profile = Some(compiler_path(profile)?);
     }
     let client = Client::builder()
         .timeout(Duration::from_secs(30))
@@ -171,6 +200,32 @@ pub async fn run(mut options: Options) -> Result<()> {
         if options.once || stopping {
             return result;
         }
+    }
+}
+
+#[cfg(all(test, windows))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn resolved_working_directory_is_accepted_by_cmd() {
+        let root = std::env::temp_dir().join(format!("conan path {}", uuid::Uuid::new_v4()));
+        std::fs::create_dir(&root).unwrap();
+        let path = compiler_path(&root).unwrap();
+        assert!(!path.to_string_lossy().starts_with(r"\\?\"));
+        let output = std::process::Command::new("cmd.exe")
+            .args(["/D", "/C", "cd"])
+            .current_dir(&path)
+            .output()
+            .unwrap();
+        std::fs::remove_dir_all(root).unwrap();
+        assert!(output.status.success());
+        assert!(
+            output.stderr.is_empty(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(String::from_utf8_lossy(&output.stdout).contains("conan path"));
     }
 }
 
