@@ -153,11 +153,10 @@ pub async fn run(mut options: Options) -> Result<()> {
             }
             continue;
         };
-        let folder = options.work.join(format!(
-            "job-{}-{}",
-            assignment.job.id,
-            uuid::Uuid::new_v4()
-        ));
+        // Leave room for CMake/MSBuild's deep temporary paths on Windows.
+        // create_dir below fails safely rather than reusing a collided directory.
+        let nonce = uuid::Uuid::new_v4().simple().to_string();
+        let folder = options.work.join(format!("job-{}", &nonce[..16]));
         std::fs::create_dir(&folder)?;
         tracing::info!(job=assignment.job.id, reference=%assignment.job.reference, target=%assignment.job.target.id, "build started");
         let mut stopping = false;
