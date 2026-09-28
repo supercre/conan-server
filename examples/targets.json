@@ -1,0 +1,9 @@
+[
+  {"id":"linux-x86_64-release","runner_os":"Linux","os":"Linux","arch":"x86_64","build_type":"Release"},
+  {"id":"windows-x86_64-release","runner_os":"Windows","os":"Windows","arch":"x86_64","build_type":"Release"},
+  {"id":"macos-arm64-release","runner_os":"Macos","os":"Macos","arch":"armv8","build_type":"Release"},
+  {"id":"macos-x86_64-release","runner_os":"Macos","os":"Macos","arch":"x86_64","build_type":"Release"},
+  {"id":"ios-arm64-release","runner_os":"Macos","os":"iOS","arch":"armv8","sdk":"iphoneos","os_version":"15.0","build_type":"Release"},
+  {"id":"ios-simulator-arm64-release","runner_os":"Macos","os":"iOS","arch":"armv8","sdk":"iphonesimulator","os_version":"15.0","build_type":"Release"},
+  {"id":"ios-simulator-x86_64-release","runner_os":"Macos","os":"iOS","arch":"x86_64","sdk":"iphonesimulator","os_version":"15.0","build_type":"Release"}
+]

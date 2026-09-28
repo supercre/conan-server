@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.20)
+project(forge_hello LANGUAGES C)
+add_library(forge_hello STATIC src/hello.c)
+install(TARGETS forge_hello ARCHIVE DESTINATION lib)
+install(FILES src/hello.h DESTINATION include)
